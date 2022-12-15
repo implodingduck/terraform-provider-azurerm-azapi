@@ -118,6 +118,13 @@ func azureProvider() *schema.Provider {
 				Description: "Should the Provider skip registering all of the Resource Providers that it supports, if they're not already registered?",
 			},
 
+			"use_oidc": {
+				Type:        schema.TypeBool,
+				Optional:    true,
+				DefaultFunc: schema.EnvDefaultFunc("ARM_USE_OIDC", false),
+				Description: "Allow OIDC Federated Identity to be used for Authentication.",
+			},
+
 			// TODO@mgd: azidentity doesn't support msi_endpoint
 			// // Managed Service Identity specific fields
 			// "use_msi": {
@@ -209,13 +216,28 @@ func providerConfigure(p *schema.Provider) schema.ConfigureContextFunc {
 			// #nosec G104
 			os.Setenv("AZURE_CLIENT_CERTIFICATE_PATH", v)
 		}
+		if v := d.Get("use_oidc").(bool); v {
+			getAssertion := func(c context.Context) (string, error) {
+				if v := c.Value(key); v == nil || !v.(bool) {
+					t.Fatal("unexpected context in getAssertion")
+				}
+				calls++
+				return "assertion", nil
+			}
+			cred, err := azidentity.NewClientAssertionCredential(d.Get("tenant_id").(string), d.Get("client_id").(string), getAssertion, &ClientAssertionCredentialOptions{
+				ClientOptions: azcore.ClientOptions{
+					Cloud: cloudConfig,
+				},
+			})
+		} else {
+			cred, err := azidentity.NewDefaultAzureCredential(&azidentity.DefaultAzureCredentialOptions{
+				ClientOptions: azcore.ClientOptions{
+					Cloud: cloudConfig,
+				},
+				TenantID: d.Get("tenant_id").(string),
+			})
+		}
 
-		cred, err := azidentity.NewDefaultAzureCredential(&azidentity.DefaultAzureCredentialOptions{
-			ClientOptions: azcore.ClientOptions{
-				Cloud: cloudConfig,
-			},
-			TenantID: d.Get("tenant_id").(string),
-		})
 		if err != nil {
 			return nil, diag.Errorf("failed to obtain a credential: %v", err)
 		}
