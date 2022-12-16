@@ -218,24 +218,24 @@ func providerConfigure(p *schema.Provider) schema.ConfigureContextFunc {
 		}
 		var cred azcore.TokenCredential
 		var err error
-		if v := d.Get("use_oidc").(bool); v {
-			getAssertion := func(c context.Context) (string, error) {
+		// if v := d.Get("use_oidc").(bool); v {
+		// 	getAssertion := func(c context.Context) (string, error) {
 
-				return "assertion", nil
-			}
-			cred, err = azidentity.NewClientAssertionCredential(d.Get("tenant_id").(string), d.Get("client_id").(string), getAssertion, &azidentity.ClientAssertionCredentialOptions{
-				ClientOptions: azcore.ClientOptions{
-					Cloud: cloudConfig,
-				},
-			})
-		} else {
-			cred, err = azidentity.NewDefaultAzureCredential(&azidentity.DefaultAzureCredentialOptions{
-				ClientOptions: azcore.ClientOptions{
-					Cloud: cloudConfig,
-				},
-				TenantID: d.Get("tenant_id").(string),
-			})
-		}
+		// 		return "assertion", nil
+		// 	}
+		// 	cred, err = azidentity.NewWorkloadIdentityCredential(d.Get("tenant_id").(string), d.Get("client_id").(string), getAssertion, &azidentity.WorkloadIdentityCredentialOptions{
+		// 		ClientOptions: azcore.ClientOptions{
+		// 			Cloud: cloudConfig,
+		// 		},
+		// 	})
+		// } else {
+		cred, err = azidentity.NewDefaultAzureCredential(&azidentity.DefaultAzureCredentialOptions{
+			ClientOptions: azcore.ClientOptions{
+				Cloud: cloudConfig,
+			},
+			TenantID: d.Get("tenant_id").(string),
+		})
+		//}
 
 		if err != nil {
 			return nil, diag.Errorf("failed to obtain a credential: %v", err)
