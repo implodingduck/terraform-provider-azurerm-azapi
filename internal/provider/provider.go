@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"io"
 	"io/ioutil"
 	"net/http"
 	"net/url"
@@ -216,9 +215,10 @@ func (o *OidcCredential) getAssertion(c context.Context) (string, error) {
 		req.URL.RawQuery = query.Encode()
 	}
 
-	req.Header.Set("Accept", "application/json")
-	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", o.oidcTokenRequestToken))
-	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	req.Header = http.Header{
+		"Accept":        {"application/json"},
+		"Authorization": {fmt.Sprintf("Bearer %s", o.oidcTokenRequestToken)},
+	}
 
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
@@ -226,7 +226,7 @@ func (o *OidcCredential) getAssertion(c context.Context) (string, error) {
 	}
 
 	defer resp.Body.Close()
-	body, err := ioutil.ReadAll(io.LimitReader(resp.Body, 1<<20))
+	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
 		return "", fmt.Errorf("OidcCredential: failed to parse response: %v", err)
 	}
