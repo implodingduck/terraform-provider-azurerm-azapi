@@ -200,6 +200,7 @@ type OidcCredential struct {
 }
 
 func (o *OidcCredential) getAssertion(c context.Context) (string, error) {
+	// based on
 	req, err := http.NewRequestWithContext(c, http.MethodGet, o.oidcTokenRequestUrl, http.NoBody)
 	if err != nil {
 		return "", fmt.Errorf("OidcCredential: failed to create new request")
@@ -210,10 +211,8 @@ func (o *OidcCredential) getAssertion(c context.Context) (string, error) {
 		return "", fmt.Errorf("OidcCredential: failed to parse query string")
 	}
 
-	if query.Get("audience") == "" {
-		query.Set("audience", "api://AzureADTokenExchange")
-		req.URL.RawQuery = query.Encode()
-	}
+	query.Set("audience", "api://AzureADTokenExchange")
+	req.URL.RawQuery = query.Encode()
 
 	req.Header = http.Header{
 		"Accept":        {"application/json"},
@@ -236,7 +235,6 @@ func (o *OidcCredential) getAssertion(c context.Context) (string, error) {
 	}
 
 	var tokenRes struct {
-		Count *int    `json:"count"`
 		Value *string `json:"value"`
 	}
 	if err := json.Unmarshal(body, &tokenRes); err != nil {
