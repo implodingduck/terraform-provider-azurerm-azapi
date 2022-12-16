@@ -216,21 +216,20 @@ func providerConfigure(p *schema.Provider) schema.ConfigureContextFunc {
 			// #nosec G104
 			os.Setenv("AZURE_CLIENT_CERTIFICATE_PATH", v)
 		}
+		var cred azcore.TokenCredential
+		var err error
 		if v := d.Get("use_oidc").(bool); v {
 			getAssertion := func(c context.Context) (string, error) {
-				if v := c.Value(key); v == nil || !v.(bool) {
-					t.Fatal("unexpected context in getAssertion")
-				}
-				calls++
+
 				return "assertion", nil
 			}
-			cred, err := azidentity.NewClientAssertionCredential(d.Get("tenant_id").(string), d.Get("client_id").(string), getAssertion, &ClientAssertionCredentialOptions{
+			cred, err = azidentity.NewClientAssertionCredential(d.Get("tenant_id").(string), d.Get("client_id").(string), getAssertion, &azidentity.ClientAssertionCredentialOptions{
 				ClientOptions: azcore.ClientOptions{
 					Cloud: cloudConfig,
 				},
 			})
 		} else {
-			cred, err := azidentity.NewDefaultAzureCredential(&azidentity.DefaultAzureCredentialOptions{
+			cred, err = azidentity.NewDefaultAzureCredential(&azidentity.DefaultAzureCredentialOptions{
 				ClientOptions: azcore.ClientOptions{
 					Cloud: cloudConfig,
 				},
